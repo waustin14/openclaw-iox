@@ -1,0 +1,41 @@
+{
+  "name": "@openclaw/cisco-syslog",
+  "version": "2026.3.22",
+  "description": "OpenClaw Cisco syslog and telemetry receiver channel plugin",
+  "type": "module",
+  "dependencies": {
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "openclaw": "workspace:*"
+  },
+  "peerDependencies": {
+    "openclaw": ">=2026.3.22"
+  },
+  "peerDependenciesMeta": {
+    "openclaw": {
+      "optional": true
+    }
+  },
+  "openclaw": {
+    "extensions": [
+      "./index.ts"
+    ],
+    "channel": {
+      "id": "cisco-syslog",
+      "label": "Cisco Syslog",
+      "selectionLabel": "Cisco Syslog (UDP/TCP receiver)",
+      "docsPath": "/channels/cisco-syslog",
+      "docsLabel": "cisco-syslog",
+      "blurb": "Receive syslog and telemetry from Cisco network devices.",
+      "aliases": ["syslog"],
+      "order": 90
+    },
+    "install": {
+      "npmSpec": "@openclaw/cisco-syslog",
+      "localPath": "extensions/cisco-syslog",
+      "defaultChoice": "local",
+      "minHostVersion": ">=2026.3.22"
+    }
+  }
+}
