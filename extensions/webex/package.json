@@ -1,0 +1,43 @@
+{
+  "name": "@openclaw/webex",
+  "version": "2026.3.22",
+  "description": "OpenClaw Cisco Webex channel plugin",
+  "type": "module",
+  "dependencies": {
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "openclaw": "workspace:*"
+  },
+  "peerDependencies": {
+    "openclaw": ">=2026.3.22"
+  },
+  "peerDependenciesMeta": {
+    "openclaw": {
+      "optional": true
+    }
+  },
+  "openclaw": {
+    "extensions": [
+      "./index.ts"
+    ],
+    "setupEntry": "./setup-entry.ts",
+    "channel": {
+      "id": "webex",
+      "label": "Webex",
+      "selectionLabel": "Webex (Bot API)",
+      "docsPath": "/channels/webex",
+      "docsLabel": "webex",
+      "blurb": "Cisco Webex messaging via Bot API.",
+      "aliases": ["wx"],
+      "order": 85,
+      "quickstartAllowFrom": true
+    },
+    "install": {
+      "npmSpec": "@openclaw/webex",
+      "localPath": "extensions/webex",
+      "defaultChoice": "local",
+      "minHostVersion": ">=2026.3.22"
+    }
+  }
+}
