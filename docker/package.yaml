@@ -1,0 +1,59 @@
+# docker/package.yaml — IOx application descriptor
+# Used by ioxclient to build the .tar IOx app package from the Docker image.
+#
+# Build the package:
+#   docker build -f Dockerfile.iox -t openclaw-iox:latest .
+#   ioxclient docker package openclaw-iox:latest . --use-targz
+#
+# Deploy via Cisco Local Manager or:
+#   ioxclient application install openclaw-iox openclaw-iox.tar
+#   ioxclient application activate openclaw-iox --payload activation.json
+#   ioxclient application start openclaw-iox
+
+descriptor-schema-version: "2.2"
+
+info:
+  name: openclaw-iox
+  description: "OpenClaw AI gateway with pyATS — autonomous network troubleshooting and configuration"
+  version: "2026.3.22"
+  author-link: "https://openclaw.ai"
+  author-name: "OpenClaw"
+
+app:
+  cpuarch: x86_64
+  type: docker
+
+  resources:
+    profile: custom
+    cpu: 2000        # millicores — 2 vCPUs (LLM inference calls block; give it room)
+    memory: 512      # MB RAM — increase to 1024 if you see OOM during heavy tool use
+    disk: 4000       # MB — 4 GB gives comfortable headroom over the ~1.2 GB install
+
+  networking:
+    - interface-name: eth0
+      ports:
+        tcp: [18789, 9000, 5514]
+        udp: [5514]
+
+  # Environment variables surfaced in Cisco Local Manager / ioxclient activation payload.
+  # Set values in activation.json or via Local Manager "App Config" tab.
+  startup:
+    rootfs: rootfs.tar
+    target-container: openclaw-iox
+
+    env:
+      # Required
+      OPENCLAW_GATEWAY_KEY: ""        # Set a strong random string — protects the gateway API
+      # Optional but recommended
+      ANTHROPIC_API_KEY: ""           # Claude API key
+      OPENAI_API_KEY: ""              # OpenAI key (alternative provider)
+      OPENCLAW_GATEWAY_MODE: "local"
+      OPENCLAW_AGENT_ID: ""           # Assign a stable agent ID
+
+  # Persistent storage — survives app restarts and upgrades.
+  # Maps to /root/.openclaw inside the container.
+  volumes:
+    - mount: /root/.openclaw
+      label: openclaw-data
+      options: rw
+      type: ext4
