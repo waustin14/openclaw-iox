@@ -1,5 +1,5 @@
 ---
-title: "Cisco IOS XE — Custom IOx Container (pyATS)"
+title: "Cisco IOS XE: Custom IOx Container (pyATS)"
 summary: "Build the OpenClaw Docker image, convert it to an IOx app package with ioxclient, and deploy it to a Catalyst or ISR device for advanced multi-protocol troubleshooting via pyATS."
 read_when:
   - Building the OpenClaw Docker image for IOx
@@ -9,7 +9,7 @@ read_when:
   - Activating and managing the OpenClaw IOx app
 ---
 
-# Cisco IOS XE — Custom IOx Container (pyATS)
+# Cisco IOS XE: Custom IOx Container (pyATS)
 
 This guide walks through building the OpenClaw Docker image, packaging it as an IOx app, deploying it to a Catalyst or ISR device, and configuring the device for SSH access so pyATS can reach the management plane.
 
@@ -52,7 +52,7 @@ IOx and the CAF (Cisco Application Framework) must be enabled — see [Enable IO
 
 ---
 
-## Step 1 — Enable IOx on the device
+## Step 1: Enable IOx on the device
 
 ```
 iox
@@ -72,7 +72,7 @@ Expected output shows `CAF` and `HA_ENV` as `Running`. If `IOx Infrastructure Su
 
 ---
 
-## Step 2 — Build the Docker image
+## Step 2: Build the Docker image
 
 Clone (or pull) the repo on your workstation, then build from the repo root:
 
@@ -102,7 +102,7 @@ docker image ls openclaw-iox
 
 ---
 
-## Step 3 — Convert the image to an IOx package
+## Step 3: Convert the image to an IOx package
 
 IOx apps are distributed as `.tar` archives. `ioxclient` handles the conversion.
 
@@ -129,7 +129,7 @@ ioxclient package validate package.tar
 
 ---
 
-## Step 4 — Create an activation payload
+## Step 4: Create an activation payload
 
 The activation payload passes environment variables (API keys, gateway config) into the container at deploy time. Create `activation.json` in the `iox-package` directory — **do not commit this file**:
 
@@ -164,7 +164,7 @@ show iox network
 
 ---
 
-## Step 5 — Deploy via ioxclient
+## Step 5: Deploy via ioxclient
 
 ### Configure ioxclient to point at the device
 
@@ -203,7 +203,7 @@ The entrypoint will print a startup summary including the pyATS and Genie versio
 
 ---
 
-## Step 6 — Configure device SSH for pyATS
+## Step 6: Configure device SSH for pyATS
 
 pyATS connects to the device over SSH from within the container. The container reaches the device via the IOx NAT interface, which typically maps to `192.168.1.x` or the management VRF address. Use the device's management IP or the VirtualPortGroup address as the pyATS target.
 
@@ -267,7 +267,7 @@ ioxclient application exec openclaw-iox -- \
 
 ---
 
-## Step 7 — Configure device-side integrations
+## Step 7: Configure device-side integrations
 
 With the container running, apply the same device configurations documented in the [Guest Shell guide](/platforms/cisco-iox) for syslog forwarding and Model-Driven Telemetry — the only difference is the destination IP. Use the IOx container's IP address (visible in `show iox network detail`) instead of `127.0.0.1`.
 

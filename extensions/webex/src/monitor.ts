@@ -380,6 +380,11 @@ export async function monitorWebexProvider(opts: {
 
     const unregister = registerWebexWebhookTarget(monitorOpts, webhookPath);
     runtime.log?.(`[${account.accountId}] webex: webhook mode active path=${webhookPath}`);
+    if (!account.config.webhookSecret) {
+      runtime.log?.(
+        `[${account.accountId}] webex: WARNING: webhookSecret not set — incoming webhook requests will not be signature-validated; set channels.webex.webhookSecret for production use`,
+      );
+    }
 
     await waitForAbortSignal(abortSignal);
     unregister();

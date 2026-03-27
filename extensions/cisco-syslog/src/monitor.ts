@@ -48,6 +48,19 @@ export async function monitorCiscoSyslog(opts: CiscoSyslogMonitorOptions): Promi
     return false;
   }
 
+  // Periodically evict stale dedupe entries to prevent unbounded map growth.
+  const dedupeSweepInterval =
+    dedupeTtlMs > 0
+      ? setInterval(() => {
+          const cutoff = Date.now() - dedupeTtlMs;
+          for (const [k, ts] of dedupeCache) {
+            if (ts < cutoff) {
+              dedupeCache.delete(k);
+            }
+          }
+        }, dedupeTtlMs)
+      : undefined;
+
   const allowFromStrings = allowFrom.map((v) => String(v));
 
   function isSourceAllowed(ip: string): boolean {
@@ -264,7 +277,10 @@ export async function monitorCiscoSyslog(opts: CiscoSyslogMonitorOptions): Promi
 
   await waitForAbortSignal(abortSignal);
 
-  // Clean up servers
+  // Clean up dedupe sweep timer and servers
+  if (dedupeSweepInterval !== undefined) {
+    clearInterval(dedupeSweepInterval);
+  }
   await syslogServer.stop().catch((err: unknown) => {
     runtime.error?.(`cisco-syslog: error stopping syslog server: ${String(err)}`);
   });

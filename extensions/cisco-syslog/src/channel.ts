@@ -1,5 +1,5 @@
 import { buildChannelConfigSchema } from "openclaw/plugin-sdk/channel-config-schema";
-import { createChatChannelPlugin } from "openclaw/plugin-sdk/core";
+import { buildChannelOutboundSessionRoute, createChatChannelPlugin } from "openclaw/plugin-sdk/core";
 import {
   createComputedAccountStatusAdapter,
   createDefaultChannelRuntimeState,
@@ -68,7 +68,6 @@ export const ciscoSyslogPlugin = createChatChannelPlugin({
       normalizeTarget: (raw) => raw?.trim() || undefined,
       resolveOutboundSessionRoute: async (params) => {
         // Outbound is not meaningful for syslog but required by the interface.
-        const { buildChannelOutboundSessionRoute } = await import("openclaw/plugin-sdk/core");
         return buildChannelOutboundSessionRoute({
           cfg: params.cfg,
           agentId: params.agentId,

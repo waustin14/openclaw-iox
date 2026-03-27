@@ -73,6 +73,11 @@ export function startSyslogServer(opts: SyslogServerOptions): SyslogServer {
 
       socket.on("data", (data) => {
         buffer += data.toString("utf-8");
+        // Guard against oversized messages from misbehaving senders.
+        if (buffer.length > MAX_SYSLOG_MESSAGE_SIZE) {
+          socket.destroy();
+          return;
+        }
         // Process complete lines (newline-framed messages, RFC 6587 octet-count optional)
         const lines = buffer.split("\n");
         // Keep the last (possibly incomplete) fragment
