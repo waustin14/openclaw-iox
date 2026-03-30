@@ -30,6 +30,7 @@ export async function monitorCiscoSyslog(opts: CiscoSyslogMonitorOptions): Promi
     allowFrom = [],
     minSeverity = 5,
     dedupeWindowSec = 30,
+    outboundChannel,
   } = channelConfig;
 
   // Simple dedupe cache: key → last-seen timestamp (ms)
@@ -119,15 +120,27 @@ export async function monitorCiscoSyslog(opts: CiscoSyslogMonitorOptions): Promi
         },
       });
 
+      // Resolve outbound channel and target for agent reply delivery.
+      // When outboundChannel is "webex", route through the Webex channel using the
+      // configured room ID so the agent's response reaches the Webex room.
+      const replyChannel = outboundChannel ?? "cisco-syslog";
+      const webexRoomId =
+        outboundChannel === "webex"
+          ? (config as Record<string, unknown> & { channels?: { webex?: { roomId?: string } } })
+              .channels?.webex?.roomId
+          : undefined;
+      const replyCtx =
+        webexRoomId != null ? { ...ctxPayload, To: webexRoomId } : ctxPayload;
+
       const { onModelSelected: _omit, ...replyPipeline } = createChannelReplyPipeline({
         cfg: config,
         agentId: route.agentId,
-        channel: "cisco-syslog",
+        channel: replyChannel,
         accountId: "default",
       });
 
       await core.channel.reply.dispatchReplyWithBufferedBlockDispatcher({
-        ctx: ctxPayload,
+        ctx: replyCtx,
         cfg: config,
         dispatcherOptions: {
           ...replyPipeline,
@@ -197,15 +210,24 @@ export async function monitorCiscoSyslog(opts: CiscoSyslogMonitorOptions): Promi
         },
       });
 
+      const replyChannel = outboundChannel ?? "cisco-syslog";
+      const webexRoomId =
+        outboundChannel === "webex"
+          ? (config as Record<string, unknown> & { channels?: { webex?: { roomId?: string } } })
+              .channels?.webex?.roomId
+          : undefined;
+      const replyCtx =
+        webexRoomId != null ? { ...ctxPayload, To: webexRoomId } : ctxPayload;
+
       const { onModelSelected: _omit, ...replyPipeline } = createChannelReplyPipeline({
         cfg: config,
         agentId: route.agentId,
-        channel: "cisco-syslog",
+        channel: replyChannel,
         accountId: "default",
       });
 
       await core.channel.reply.dispatchReplyWithBufferedBlockDispatcher({
-        ctx: ctxPayload,
+        ctx: replyCtx,
         cfg: config,
         dispatcherOptions: {
           ...replyPipeline,

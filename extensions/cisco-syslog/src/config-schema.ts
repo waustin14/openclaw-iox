@@ -19,4 +19,6 @@ export const CiscoSyslogConfigSchema = z.object({
   agentId: z.string().optional(),
   // Suppress repeated identical messages within this window (seconds). Default 30.
   dedupeWindowSec: z.number().int().min(0).optional().default(30),
+  // Channel to use for agent reply delivery (e.g. "webex"). If unset, replies are discarded.
+  outboundChannel: z.string().optional(),
 });

@@ -1,11 +1,6 @@
-// Private helper surface for the bundled cisco-syslog plugin.
-export { buildChannelConfigSchema } from "../channels/plugins/config-schema.js";
-export type { ChannelPlugin } from "../channels/plugins/types.plugin.js";
+// Plugin SDK barrel for the cisco-syslog channel extension.
+// Exports the subset of core symbols needed by the cisco-syslog plugin.
 export { createChannelReplyPipeline } from "./channel-reply-pipeline.js";
-export type { OpenClawConfig } from "../config/config.js";
-export type { PluginRuntime } from "../plugins/runtime/types.js";
 export { resolveInboundRouteEnvelopeBuilderWithRuntime } from "./inbound-envelope.js";
 export { waitForAbortSignal } from "../infra/abort-signal.js";
-export { ciscoSyslogPlugin } from "../../extensions/cisco-syslog/index.js";
-export { setCiscoSyslogRuntime } from "../../extensions/cisco-syslog/index.js";
-export { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../routing/session-key.js";
+export type { OpenClawConfig } from "../config/config.js";
