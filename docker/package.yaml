@@ -43,12 +43,25 @@ app:
 
     env:
       # Required
-      OPENCLAW_GATEWAY_KEY: ""        # Set a strong random string — protects the gateway API
+      OPENCLAW_GATEWAY_TOKEN: ""      # Set a strong random string — protects the gateway API; agents also use this to connect back
       # Optional but recommended
+      WEBEX_BOT_TOKEN: ""             # Webex bot token — required for the Webex channel plugin
+      WEBEX_ROOM_ID: ""              # Default Webex room ID for outbound messages (base64 Y2lz... string)
+      WEBEX_ALLOW_FROM: ""           # Comma-separated Webex room IDs pre-approved for DM (skips pairing)
       ANTHROPIC_API_KEY: ""           # Claude API key
       OPENAI_API_KEY: ""              # OpenAI key (alternative provider)
       OPENCLAW_GATEWAY_MODE: "local"
-      OPENCLAW_AGENT_ID: ""           # Assign a stable agent ID
+      # Webex webhook (for inbound messages from Webex)
+      WEBEX_WEBHOOK_URL: ""           # Public HTTPS URL that Webex will POST events to (e.g. https://example.ngrok.io/webhooks/webex/default)
+      WEBEX_WEBHOOK_SECRET: ""        # Optional shared secret for Webex webhook HMAC verification
+      # ngrok — alternative to WEBEX_WEBHOOK_URL for testing; starts a tunnel on first boot
+      NGROK_AUTHTOKEN: ""             # ngrok authtoken; tunnel URL is used as WEBEX_WEBHOOK_URL if that var is unset
+      # Device SSH access (used to generate the pyATS testbed at startup)
+      DEVICE_HOST: ""                 # Management IP or hostname of the target device
+      DEVICE_HOSTNAME: "primary"      # IOS hostname of the device (must match the router prompt, e.g. R1)
+      DEVICE_USERNAME: "openclaw"     # SSH username configured on the device
+      DEVICE_OS: "iosxe"              # IOS XE: iosxe | NX-OS: nxos | IOS: ios
+      DEVICE_PORT: "22"               # SSH port (default 22)
 
   # Persistent storage — survives app restarts and upgrades.
   # Maps to /root/.openclaw inside the container.
