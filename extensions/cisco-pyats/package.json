@@ -1,0 +1,31 @@
+{
+  "name": "@openclaw/cisco-pyats",
+  "version": "2026.3.22",
+  "description": "OpenClaw Cisco pyATS agent tools — run show commands, push config, and learn device state",
+  "type": "module",
+  "dependencies": {
+    "@sinclair/typebox": "0.34.48"
+  },
+  "devDependencies": {
+    "openclaw": "workspace:*"
+  },
+  "peerDependencies": {
+    "openclaw": ">=2026.3.22"
+  },
+  "peerDependenciesMeta": {
+    "openclaw": {
+      "optional": true
+    }
+  },
+  "openclaw": {
+    "extensions": [
+      "./index.ts"
+    ],
+    "install": {
+      "npmSpec": "@openclaw/cisco-pyats",
+      "localPath": "extensions/cisco-pyats",
+      "defaultChoice": "local",
+      "minHostVersion": ">=2026.3.22"
+    }
+  }
+}
