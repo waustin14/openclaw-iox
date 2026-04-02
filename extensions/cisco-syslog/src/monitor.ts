@@ -129,8 +129,13 @@ export async function monitorCiscoSyslog(opts: CiscoSyslogMonitorOptions): Promi
           ? (config as Record<string, unknown> & { channels?: { webex?: { roomId?: string } } })
               .channels?.webex?.roomId
           : undefined;
+      // Set OriginatingChannel + OriginatingTo so dispatch-from-config routes the reply
+      // through the configured outbound channel (shouldRouteToOriginating = true), bypassing
+      // cisco-syslog's no-op outbound path entirely.
       const replyCtx =
-        webexRoomId != null ? { ...ctxPayload, To: webexRoomId } : ctxPayload;
+        webexRoomId != null
+          ? { ...ctxPayload, To: webexRoomId, OriginatingChannel: replyChannel, OriginatingTo: webexRoomId }
+          : ctxPayload;
 
       const { onModelSelected: _omit, ...replyPipeline } = createChannelReplyPipeline({
         cfg: config,
@@ -144,7 +149,7 @@ export async function monitorCiscoSyslog(opts: CiscoSyslogMonitorOptions): Promi
         cfg: config,
         dispatcherOptions: {
           ...replyPipeline,
-          onDeliveryError: (err) => {
+          onError: (err) => {
             runtime.error?.(`cisco-syslog: dispatch error: ${String(err)}`);
           },
         },
@@ -216,8 +221,13 @@ export async function monitorCiscoSyslog(opts: CiscoSyslogMonitorOptions): Promi
           ? (config as Record<string, unknown> & { channels?: { webex?: { roomId?: string } } })
               .channels?.webex?.roomId
           : undefined;
+      // Set OriginatingChannel + OriginatingTo so dispatch-from-config routes the reply
+      // through the configured outbound channel (shouldRouteToOriginating = true), bypassing
+      // cisco-syslog's no-op outbound path entirely.
       const replyCtx =
-        webexRoomId != null ? { ...ctxPayload, To: webexRoomId } : ctxPayload;
+        webexRoomId != null
+          ? { ...ctxPayload, To: webexRoomId, OriginatingChannel: replyChannel, OriginatingTo: webexRoomId }
+          : ctxPayload;
 
       const { onModelSelected: _omit, ...replyPipeline } = createChannelReplyPipeline({
         cfg: config,
@@ -231,7 +241,7 @@ export async function monitorCiscoSyslog(opts: CiscoSyslogMonitorOptions): Promi
         cfg: config,
         dispatcherOptions: {
           ...replyPipeline,
-          onDeliveryError: (err) => {
+          onError: (err) => {
             runtime.error?.(`cisco-syslog: mdt dispatch error: ${String(err)}`);
           },
         },
