@@ -1,0 +1,106 @@
+# Dockerfile.iox — OpenClaw IOx custom container (pyATS edition)
+#
+# Target platforms:
+#   linux/amd64  — Catalyst 9300/9400/9500, ISR 4000, CSR 1000v
+#   linux/arm64  — Catalyst 9800-L, IR1800, some IR1101 variants
+#   linux/arm/v7 — IR1101 (IOS XE 16.12+)
+#
+# After building, package for IOx with:
+#   ioxclient docker package openclaw-iox:latest . --use-targz
+#
+# Required env vars at runtime (pass via IOx app config or docker run -e):
+#   OPENCLAW_GATEWAY_KEY   — gateway API key
+#   ANTHROPIC_API_KEY      — or whichever provider key you use
+#   WEBEX_BOT_TOKEN        — if using the Webex channel plugin
+
+FROM --platform=linux/amd64 debian:bookworm-slim
+
+ARG NODE_VERSION=22
+ARG OPENCLAW_VERSION=latest
+
+# --- Base env ---
+ENV DEBIAN_FRONTEND=noninteractive \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    # Puts the pyATS venv on PATH for all subsequent RUN steps and at runtime
+    PATH="/opt/pyats/bin:$PATH" \
+    # Node/npm global prefix
+    NPM_CONFIG_PREFIX=/usr/local
+
+# --- System dependencies ---
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    # Core utilities
+    curl \
+    ca-certificates \
+    gnupg \
+    # Python (pyATS requires 3.8+; bookworm ships 3.11)
+    python3 \
+    python3-pip \
+    python3-venv \
+    # SSH client — required for pyATS to connect to device management plane
+    openssh-client \
+    # Useful for troubleshooting inside the container
+    iputils-ping \
+    && rm -rf /var/lib/apt/lists/*
+
+# --- Node.js 22 (via NodeSource) ---
+RUN curl -fsSL https://deb.nodesource.com/setup_${NODE_VERSION}.x | bash - \
+    && apt-get install -y --no-install-recommends nodejs \
+    && rm -rf /var/lib/apt/lists/* \
+    && node --version \
+    && npm --version
+
+# --- pyATS (base + genie only — full install is ~1.5 GB, avoid it) ---
+# pyats: core framework, connection management, job runner
+# genie: structured parsers for 700+ IOS XE show commands, config modeling
+RUN python3 -m venv /opt/pyats \
+    && pip install --no-cache-dir \
+        pyats \
+        genie \
+    && python3 -c "import pyats; import genie; print('pyATS OK')"
+
+# --- OpenClaw gateway ---
+RUN npm install -g openclaw@${OPENCLAW_VERSION} \
+    && openclaw --version
+
+# --- Plugin installation ---
+# Option A (recommended): install plugins from npm once they are published.
+#   Uncomment the lines below and remove the COPY block (Option B).
+#
+# RUN openclaw plugin install @openclaw/webex @openclaw/cisco-syslog
+
+# Option B: install plugins from local source (current state — not yet published).
+#   Copies the built extension directories into the image and installs deps.
+COPY extensions/webex /opt/openclaw-plugins/webex
+COPY extensions/cisco-syslog /opt/openclaw-plugins/cisco-syslog
+
+RUN cd /opt/openclaw-plugins/webex \
+    && npm install --omit=dev \
+    && cd /opt/openclaw-plugins/cisco-syslog \
+    && npm install --omit=dev
+
+# Register the local plugins so OpenClaw loads them at startup.
+# In production these would be installed via `openclaw plugin install` instead.
+ENV OPENCLAW_PLUGIN_PATHS="/opt/openclaw-plugins/webex,/opt/openclaw-plugins/cisco-syslog"
+
+# --- Runtime config directory ---
+# Mount a persistent volume here to survive container restarts:
+#   -v openclaw-data:/root/.openclaw
+RUN mkdir -p /root/.openclaw/credentials /root/.openclaw/sessions
+
+# --- Entrypoint ---
+COPY docker/iox-entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
+# --- Exposed ports ---
+# 18789   — OpenClaw gateway (HTTP + WebSocket)
+# 5514    — Syslog receiver UDP + TCP (avoid 514 to skip root requirement)
+# 9000    — Cisco MDT telemetry HTTP (dial-out)
+EXPOSE 18789
+EXPOSE 5514/udp
+EXPOSE 5514/tcp
+EXPOSE 9000
+
+WORKDIR /root
+
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

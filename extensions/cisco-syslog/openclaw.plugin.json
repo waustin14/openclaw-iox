@@ -1,0 +1,9 @@
+{
+  "id": "cisco-syslog",
+  "channels": ["cisco-syslog"],
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {}
+  }
+}

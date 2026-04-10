@@ -577,6 +577,14 @@
       "types": "./dist/plugin-sdk/zalouser.d.ts",
       "default": "./dist/plugin-sdk/zalouser.js"
     },
+    "./plugin-sdk/webex": {
+      "types": "./dist/plugin-sdk/webex.d.ts",
+      "default": "./dist/plugin-sdk/webex.js"
+    },
+    "./plugin-sdk/cisco-syslog": {
+      "types": "./dist/plugin-sdk/cisco-syslog.d.ts",
+      "default": "./dist/plugin-sdk/cisco-syslog.js"
+    },
     "./extension-api": "./dist/extensionAPI.js",
     "./cli-entry": "./openclaw.mjs"
   },
