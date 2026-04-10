@@ -9,7 +9,7 @@
 #   ioxclient docker package openclaw-iox:latest . --use-targz
 #
 # Required env vars at runtime (pass via IOx app config or docker run -e):
-#   OPENCLAW_GATEWAY_KEY   — gateway API key
+#   OPENCLAW_GATEWAY_TOKEN — bearer token protecting the gateway API (also used by agents to connect back)
 #   ANTHROPIC_API_KEY      — or whichever provider key you use
 #   WEBEX_BOT_TOKEN        — if using the Webex channel plugin
 
@@ -39,8 +39,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3-venv \
     # SSH client — required for pyATS to connect to device management plane
     openssh-client \
+    # lsof — required by openclaw gateway --force to check for stale pid files
+    lsof \
     # Useful for troubleshooting inside the container
     iputils-ping \
+    && rm -rf /var/lib/apt/lists/*
+
+# --- ngrok (HTTP tunnel — used when NGROK_AUTHTOKEN is set and no WEBEX_WEBHOOK_URL is provided) ---
+RUN curl -fsSL https://ngrok-agent.s3.amazonaws.com/ngrok.asc \
+        | tee /etc/apt/trusted.gpg.d/ngrok.asc >/dev/null \
+    && echo "deb https://ngrok-agent.s3.amazonaws.com buster main" \
+        | tee /etc/apt/sources.list.d/ngrok.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends ngrok \
     && rm -rf /var/lib/apt/lists/*
 
 # --- Node.js 22 (via NodeSource) ---
@@ -54,14 +65,28 @@ RUN curl -fsSL https://deb.nodesource.com/setup_${NODE_VERSION}.x | bash - \
 # pyats: core framework, connection management, job runner
 # genie: structured parsers for 700+ IOS XE show commands, config modeling
 RUN python3 -m venv /opt/pyats \
-    && pip install --no-cache-dir \
+    && /opt/pyats/bin/pip install --no-cache-dir \
         pyats \
         genie \
-    && python3 -c "import pyats; import genie; print('pyATS OK')"
+    && /opt/pyats/bin/python3 -c "import pyats; import genie; print('pyATS OK')"
 
 # --- OpenClaw gateway ---
 RUN npm install -g openclaw@${OPENCLAW_VERSION} \
     && openclaw --version
+
+# --- Plugin SDK shims for webex and cisco-syslog ---
+# The published openclaw package does not include dist/plugin-sdk/webex.js or
+# dist/plugin-sdk/cisco-syslog.js. Each extension's runtime-api.ts imports from
+# "openclaw/plugin-sdk/<id>" which needs the barrel to exist. The install scripts
+# copy CJS shims that re-export from individual plugin-sdk subpaths, plus inline
+# the inbound-envelope helper. If a future openclaw version ships the real barrels,
+# each script is a no-op.
+COPY docker/plugin-sdk-webex-shim.js /tmp/docker/plugin-sdk-webex-shim.js
+COPY docker/install-webex-shim.mjs /tmp/docker/install-webex-shim.mjs
+RUN node /tmp/docker/install-webex-shim.mjs
+COPY docker/plugin-sdk-cisco-syslog-shim.js /tmp/docker/plugin-sdk-cisco-syslog-shim.js
+COPY docker/install-cisco-syslog-shim.mjs /tmp/docker/install-cisco-syslog-shim.mjs
+RUN node /tmp/docker/install-cisco-syslog-shim.mjs
 
 # --- Plugin installation ---
 # Option A (recommended): install plugins from npm once they are published.
@@ -73,15 +98,27 @@ RUN npm install -g openclaw@${OPENCLAW_VERSION} \
 #   Copies the built extension directories into the image and installs deps.
 COPY extensions/webex /opt/openclaw-plugins/webex
 COPY extensions/cisco-syslog /opt/openclaw-plugins/cisco-syslog
+COPY extensions/cisco-pyats /opt/openclaw-plugins/cisco-pyats
 
 RUN cd /opt/openclaw-plugins/webex \
+    && npm pkg delete devDependencies \
     && npm install --omit=dev \
     && cd /opt/openclaw-plugins/cisco-syslog \
+    && npm pkg delete devDependencies \
+    && npm install --omit=dev \
+    && cd /opt/openclaw-plugins/cisco-pyats \
+    && npm pkg delete devDependencies \
     && npm install --omit=dev
 
-# Register the local plugins so OpenClaw loads them at startup.
-# In production these would be installed via `openclaw plugin install` instead.
-ENV OPENCLAW_PLUGIN_PATHS="/opt/openclaw-plugins/webex,/opt/openclaw-plugins/cisco-syslog"
+# Default pyATS testbed path — generated at container startup by the entrypoint
+# from DEVICE_HOST / DEVICE_USERNAME / DEVICE_OS env vars.
+ENV OPENCLAW_PYATS_TESTBED="/root/.openclaw/testbed.yaml"
+
+# --- Default agent personality files ---
+# Seeded into the volume by the entrypoint on first start if not already present.
+# Override by editing /root/.openclaw/agents/main/agent/SOUL.md inside the container.
+COPY docker/agent-soul.md /opt/openclaw-defaults/agent-soul.md
+COPY docker/agent-tools.md /opt/openclaw-defaults/agent-tools.md
 
 # --- Runtime config directory ---
 # Mount a persistent volume here to survive container restarts:

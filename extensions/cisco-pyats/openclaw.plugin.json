@@ -1,0 +1,21 @@
+{
+  "id": "cisco-pyats",
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "testbedPath": {
+        "type": "string",
+        "description": "Path to the pyATS testbed YAML file. Defaults to OPENCLAW_PYATS_TESTBED env var or /root/.openclaw/testbed.yaml."
+      },
+      "defaultDevice": {
+        "type": "string",
+        "description": "Default device name in the testbed to target when no device is specified. Defaults to 'primary'."
+      },
+      "timeoutSeconds": {
+        "type": "number",
+        "description": "Default timeout in seconds for pyATS operations. Defaults to 60."
+      }
+    }
+  }
+}

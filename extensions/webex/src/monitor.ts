@@ -301,6 +301,15 @@ async function processWebhookEvent(
     cfg: config,
     dispatcherOptions: {
       ...replyPipeline,
+      deliver: async (payload: { text?: string }) => {
+        const replyText = payload.text?.trim();
+        if (!replyText) {
+          return;
+        }
+        const { sendMessageWebex } = await import("./send.js");
+        await sendMessageWebex({ roomId, text: replyText, token, fetcher });
+        statusSink?.({ lastOutboundAt: Date.now() });
+      },
       onDeliveryError: (err) => {
         runtime.error?.(
           `[${account.accountId}] webex: delivery error to ${roomId}: ${String(err)}`,
@@ -364,8 +373,8 @@ export async function monitorWebexProvider(opts: {
   const webhookUrl = account.config.webhookUrl?.trim();
   if (webhookUrl) {
     const webhookPath = resolveWebhookPath({
-      channel: "webex",
-      accountId: account.accountId,
+      webhookUrl,
+      defaultPath: `/webhooks/webex/${account.accountId}`,
     });
 
     // Register with Webex API
@@ -419,13 +428,17 @@ async function ensureWebexWebhook(params: {
     );
 
     if (existing) {
+      // Always update the webhook to sync the targetUrl and secret.
+      // The Webex API does not return the secret, so we cannot diff it;
+      // re-sending is idempotent and ensures the registered secret
+      // matches the current config.
+      await updateWebexWebhook(
+        token,
+        existing.id,
+        { name: WEBEX_WEBHOOK_NAME, targetUrl: webhookUrl, secret: webhookSecret },
+        fetcher,
+      );
       if (existing.targetUrl !== webhookUrl) {
-        await updateWebexWebhook(
-          token,
-          existing.id,
-          { name: WEBEX_WEBHOOK_NAME, targetUrl: webhookUrl, secret: webhookSecret },
-          fetcher,
-        );
         runtime.log?.(`[${accountId}] webex: updated webhook targetUrl=${webhookUrl}`);
       } else {
         runtime.log?.(`[${accountId}] webex: webhook already registered targetUrl=${webhookUrl}`);

@@ -321,6 +321,10 @@
       "types": "./dist/plugin-sdk/channel-targets.d.ts",
       "default": "./dist/plugin-sdk/channel-targets.js"
     },
+    "./plugin-sdk/cisco-syslog": {
+      "types": "./dist/plugin-sdk/cisco-syslog.d.ts",
+      "default": "./dist/plugin-sdk/cisco-syslog.js"
+    },
     "./plugin-sdk/feishu": {
       "types": "./dist/plugin-sdk/feishu.d.ts",
       "default": "./dist/plugin-sdk/feishu.js"

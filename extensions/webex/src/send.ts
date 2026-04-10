@@ -9,11 +9,12 @@ export type WebexSendParams = {
   fetcher?: WebexFetch;
 };
 
-/** Send a text message to a Webex room. Returns the message ID on success. */
+/** Send a message to a Webex room. Sends as markdown (with text fallback) so the
+ *  client renders formatting. Returns the message ID on success. */
 export async function sendMessageWebex(params: WebexSendParams): Promise<string | undefined> {
   const msg = await sendWebexMessage(
     params.token,
-    { roomId: params.roomId, text: params.text },
+    { roomId: params.roomId, text: params.text, markdown: params.text },
     params.fetcher,
   );
   return msg.id;
