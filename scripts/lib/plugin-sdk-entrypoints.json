@@ -70,6 +70,7 @@
   "channel-policy",
   "channel-send-result",
   "channel-targets",
+  "cisco-syslog",
   "feishu",
   "group-access",
   "directory-runtime",
